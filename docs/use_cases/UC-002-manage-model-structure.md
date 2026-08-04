@@ -83,7 +83,7 @@ A new relationship concept is never created directly in the model tree; it comes
 
 ### BR-004: Deleting an Element Cascades to Its Relationships
 
-Deleting an element also deletes every relationship connected to it, and this cascades recursively to any relationship connected to one of those relationships.
+Deleting an element also deletes every relationship connected to it. The ArchiMate specification also allows a relationship to itself be the source or target of another relationship (see the note under RELATIONSHIP in the entity model); where that rare case occurs, the cascade extends to that relationship too. As modeled, RELATIONSHIP only stores element-to-element connections, so this recursive case is a known limitation, not something the current schema can execute — treat it as out of scope until source/target is made polymorphic.
 
 ### BR-005: Deleting a Folder Cascades to Its Contents
 

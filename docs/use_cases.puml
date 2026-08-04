@@ -35,6 +35,6 @@ automation --> UC006
 automation --> UC007
 automation --> UC008
 
-UC003 ..> UC007 : <<extend>>
+UC003 ..> UC007 : <<include>>
 
 @enduml

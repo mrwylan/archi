@@ -20,8 +20,10 @@ erDiagram
     VIEW_OBJECT ||--o{ VIEW_CONNECTION : "is target of"
     RELATIONSHIP |o--o{ VIEW_CONNECTION : "is represented by"
     MODEL ||--o{ PROFILE : defines
-    PROFILE }o--o{ ELEMENT : "applied to"
-    PROFILE }o--o{ RELATIONSHIP : "applied to"
+    PROFILE ||--o{ ELEMENT_PROFILE : "applied via"
+    ELEMENT ||--o{ ELEMENT_PROFILE : has
+    PROFILE ||--o{ RELATIONSHIP_PROFILE : "applied via"
+    RELATIONSHIP ||--o{ RELATIONSHIP_PROFILE : has
     MODEL ||--o{ PROPERTY : carries
     FOLDER ||--o{ PROPERTY : carries
     ELEMENT ||--o{ PROPERTY : carries
@@ -52,7 +54,7 @@ Represents a named container used to organize elements, relationships, and views
 | model_id          | Model the folder belongs to                                                                                           | Long      | 19                | Not Null, Foreign Key (MODEL.id)                                                                    |
 | parent_folder_id  | Enclosing folder, when this folder is nested rather than top-level                                                     | Long      | 19                | Optional                                                                                             |
 | name              | Name of the folder                                                                                                    | String    | 255               | Not Null                                                                                             |
-| type              | Category of content the top-level folder was created to hold                                                          | String    | 30                | Not Null, Values: Strategy, Business, Application, Technology, Motivation, Implementation Migration, Other, Relations, Views, User |
+| type              | Category of content the folder holds: one of the nine standard top-level categories, or User for a folder the Modeler created to organize content further | String    | 30                | Not Null, Values: Strategy, Business, Application, Technology, Motivation, Implementation & Migration, Other, Relations, Views, User |
 | documentation     | Free-text notes about the folder's purpose                                                                             | String    | 2000              | Optional                                                                                             |
 
 ### ELEMENT
@@ -125,17 +127,31 @@ Represents a visual line on a view that connects two shapes, typically depicting
 | source_view_object_id  | Shape the connection starts from                                                                      | Long      | 19                | Not Null, Foreign Key (VIEW_OBJECT.id)        |
 | target_view_object_id  | Shape the connection points to                                                                        | Long      | 19                | Not Null, Foreign Key (VIEW_OBJECT.id)        |
 | relationship_id        | Model relationship this connection depicts, when it represents a relationship rather than a free-standing link | Long | 19 | Optional |
+| label                  | Text label on the connection; carries the relationship's own label when it represents one, or free text on a canvas connection that represents no relationship | String | 255 | Optional |
 | line_color             | Color of the connection line                                                                          | String    | 20                | Optional                                     |
+
+**Note:** styling is intentionally minimized to the fields above (fill/line color only) rather than reproducing every visual attribute Archi supports (border color, line width, line style, font, opacity, etc.); add further styling attributes if the reimplementation needs to preserve them.
 
 ### PROPERTY
 
 Represents a custom name/value attribute that can be attached to a model, folder, element, relationship, view, or applicable view shape or connection to record additional information beyond the standard fields.
 
-| Attribute | Description                        | Data Type | Length/Precision | Validation Rules |
-|-----------|-------------------------------------|-----------|-------------------|-------------------|
-| id        | Unique identifier                   | Long      | 19                | Primary Key, Sequence |
-| key       | Name of the custom property         | String    | 100               | Not Null           |
-| value     | Value of the custom property        | String    | 2000              | Optional            |
+| Attribute            | Description                                                              | Data Type | Length/Precision | Validation Rules                       |
+|----------------------|---------------------------------------------------------------------------|-----------|-------------------|-------------------------------------------|
+| id                   | Unique identifier                                                        | Long      | 19                | Primary Key, Sequence                      |
+| model_id             | Model this property belongs to, when its owner is the model itself       | Long      | 19                | Optional                                   |
+| folder_id            | Folder this property belongs to, when its owner is a folder              | Long      | 19                | Optional                                   |
+| element_id           | Element this property belongs to, when its owner is an element           | Long      | 19                | Optional                                   |
+| relationship_id      | Relationship this property belongs to, when its owner is a relationship  | Long      | 19                | Optional                                   |
+| view_id              | View this property belongs to, when its owner is a view                  | Long      | 19                | Optional                                   |
+| view_object_id       | Shape this property belongs to, when its owner is a view shape           | Long      | 19                | Optional                                   |
+| view_connection_id   | Connection this property belongs to, when its owner is a view connection | Long      | 19                | Optional                                   |
+| key                  | Name of the custom property                                              | String    | 100               | Not Null                                   |
+| value                | Value of the custom property                                             | String    | 2000              | Optional                                   |
+
+**Constraints:** exactly one of `model_id`, `folder_id`, `element_id`, `relationship_id`, `view_id`, `view_object_id`, `view_connection_id` is populated per row; the others are null. This is a deliberate one-table-with-nullable-owner-columns design rather than seven join tables, chosen for simplicity — switch to per-owner join tables if the reimplementation needs the database to enforce the single-owner constraint itself.
+
+**Note:** the property keys manager (UC-004 A2) operates on distinct values of `key` across this table; there is no separate lookup table of known keys. Add one if key management needs to be queryable without scanning `PROPERTY`.
 
 ### PROFILE
 
@@ -148,3 +164,23 @@ Represents a user-defined specialization (stereotype) of a standard ArchiMate el
 | name               | Name of the profile                                                                                    | String    | 255               | Not Null                             |
 | concept_type       | ArchiMate element or relationship type this profile specializes                                        | String    | 50                | Not Null                             |
 | is_specialization  | Whether the profile behaves as a strict specialization (same semantics as the base type) rather than a free-form stereotype | Boolean | 1 | Not Null |
+
+### ELEMENT_PROFILE
+
+Represents one profile being applied to one element; the join between ELEMENT and PROFILE.
+
+| Attribute  | Description                    | Data Type | Length/Precision | Validation Rules                       |
+|------------|----------------------------------|-----------|-------------------|-------------------------------------------|
+| id         | Unique identifier                | Long      | 19                | Primary Key, Sequence                      |
+| element_id | Element the profile is applied to | Long      | 19                | Not Null, Foreign Key (ELEMENT.id)         |
+| profile_id | Profile applied to the element    | Long      | 19                | Not Null, Foreign Key (PROFILE.id)         |
+
+### RELATIONSHIP_PROFILE
+
+Represents one profile being applied to one relationship; the join between RELATIONSHIP and PROFILE.
+
+| Attribute        | Description                          | Data Type | Length/Precision | Validation Rules                       |
+|------------------|-----------------------------------------|-----------|-------------------|-------------------------------------------|
+| id               | Unique identifier                       | Long      | 19                | Primary Key, Sequence                      |
+| relationship_id  | Relationship the profile is applied to  | Long      | 19                | Not Null, Foreign Key (RELATIONSHIP.id)    |
+| profile_id       | Profile applied to the relationship     | Long      | 19                | Not Null, Foreign Key (PROFILE.id)         |
