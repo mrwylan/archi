@@ -1,0 +1,40 @@
+@startuml Use Cases Overview
+left to right direction
+
+actor "Modeler" as modeler
+actor "Automation Tool" as automation
+
+rectangle "Archi" {
+    usecase "UC-001\nManage Model Lifecycle" as UC001
+    usecase "UC-002\nManage Model Structure" as UC002
+    usecase "UC-003\nEdit Architecture Diagram" as UC003
+    usecase "UC-004\nManage Model Extensions" as UC004
+    usecase "UC-005\nModel on a Free-Form Canvas" as UC005
+    usecase "UC-006\nImport Model Data" as UC006
+    usecase "UC-007\nExport Model Data" as UC007
+    usecase "UC-008\nGenerate Model Report" as UC008
+    usecase "UC-009\nManage Model Templates" as UC009
+    usecase "UC-010\nValidate Model" as UC010
+    usecase "UC-011\nVisualize Element Relationships" as UC011
+}
+
+modeler --> UC001
+modeler --> UC002
+modeler --> UC003
+modeler --> UC004
+modeler --> UC005
+modeler --> UC006
+modeler --> UC007
+modeler --> UC008
+modeler --> UC009
+modeler --> UC010
+modeler --> UC011
+
+automation --> UC001
+automation --> UC006
+automation --> UC007
+automation --> UC008
+
+UC003 ..> UC007 : <<include>>
+
+@enduml
